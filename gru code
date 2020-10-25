@@ -1,0 +1,115 @@
+
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+import matplotlib
+import matplotlib.pyplot as plt
+import sklearn
+from pandas.plotting import scatter_matrix
+
+
+from keras.models import Sequential
+from keras.layers import Dense, LSTM, Dropout, GRU
+
+from keras import optimizers
+
+from keras.optimizers import SGD
+
+from sklearn.model_selection import train_test_split
+
+
+df = pd.read_csv(r'C:\01 Study Materials\01 Thesis\Heart-Disease-Prediction-master\heart-data.csv')
+
+df.info()
+
+df = df.apply(pd.to_numeric)
+
+cols_to_norm = ['age', 'trestbps','chol', 'thalach', 'thal']
+
+df_normalized = df[cols_to_norm].apply(lambda x: (x - x.min()) / (x.max() - x.min()))
+
+## Add back in our other columns
+
+df_normalized['sex'] = df['sex']
+df_normalized['cp'] = df['cp']
+df_normalized['fbs'] = df['fbs']
+df_normalized['restecg'] = df['restecg']
+df_normalized['exang'] = df['exang']
+df_normalized['oldpeak'] = df['oldpeak']
+df_normalized['slope'] = df['slope']
+df_normalized['ca'] = df['ca']
+df_normalized['target'] = df['target']
+df_normalized
+
+
+df=df_normalized
+
+df.hist(figsize=(12,12))
+plt.show()
+
+
+from sklearn import model_selection
+
+X = np.array(df.drop(['target'], axis=1))
+y = np.array(df['target'])
+
+X_train, X_test, y_train, y_test = model_selection.train_test_split(X,y, test_size=0.2)
+
+
+from keras.utils.np_utils import to_categorical
+
+Y_train = to_categorical(y_train,num_classes=None)
+Y_test = to_categorical(y_test, num_classes=None)
+
+print(Y_train.shape)
+print(Y_test.shape)
+print(X_train.shape)
+
+##GRU Architecture##
+# The GRU architecture
+model_GRU = Sequential()
+# First GRU layer with Dropout regularisation
+model_GRU.add(GRU(units=128, return_sequences=True, input_shape=(X_train.shape[1],1), activation='tanh'))
+model_GRU.add(Dropout(0.2))
+# Second GRU layer
+model_GRU.add(GRU(units=64, return_sequences=True, input_shape=(X_train.shape[1],1), activation='tanh'))
+model_GRU.add(Dropout(0.2))
+# Third GRU layer
+model_GRU.add(GRU(units=32, return_sequences=True, input_shape=(X_train.shape[1],1), activation='tanh'))
+model_GRU.add(Dropout(0.2))
+# Fourth GRU layer
+model_GRU.add(GRU(units=16, activation='tanh'))
+model_GRU.add(Dropout(0.2))
+# The output layer
+model_GRU.add(Dense(units=5,activation='sigmoid'))
+# Compiling the RNN
+model_GRU.compile(optimizer=SGD(lr=0.01, decay=1e-7, momentum=0.9, nesterov=False),loss='binary_crossentropy')
+
+
+model_GRU = create_model()
+print(model_GRU.summary())
+
+
+model_GRU.fit(X_train, Y_train, epochs=30, batch_size=10, verbose=True)
+
+
+test_loss, test_accuracy = model_GRU.evaluate(X_test, Y_test)
+print("Test Patient Accuracy: {}".format(test_accuracy))
+
+
+from sklearn.metrics import classification_report, accuracy_score
+
+categorical_pred = np.argmax(model.predict(X_test), axis=1)
+
+print("Result for Categorical Model: ")
+print(accuracy_score(y_test, categorical_pred))
+print(classification_report(y_test, categorical_pred))
+
+
+# Preccsion tracks false positives, Recall tracks false negatives
+
+binary_pred = np.round(model_GRU.predict(X_test)).astype(int)
+
+print("Result for Binary Model: ")
+print(accuracy_score(Y_test, binary_pred))
+print(classification_report(Y_test, binary_pred))
