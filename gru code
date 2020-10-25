@@ -65,6 +65,37 @@ print(Y_train.shape)
 print(Y_test.shape)
 print(X_train.shape)
 
+
+##NN Model##
+def model1():
+  model = tf.keras.Sequential()
+  model.add(tf.keras.layers.Dense(units=128, activation="relu", input_shape=(13,)))
+  model.add(tf.keras.layers.Dropout(0.2))
+  model.add(tf.keras.layers.Dense(units=64, activation="relu"))
+  model.add(tf.keras.layers.Dropout(0.2))
+  model.add(tf.keras.layers.Dense(units=32, activation="relu")) 
+  model.add(tf.keras.layers.Dropout(0.2))
+  model.add(tf.keras.layers.Dense(units=5, activation="softmax"))
+  
+  model.compile(loss="binary_crossentropy", optimizer=tf.keras.optimizers.Adam(0.0001), metrics=["accuracy"])
+  
+  return model
+  
+model = model1()
+print(model.summary())
+
+model.fit(X_train, Y_train, epochs=30, batch_size=10, verbose=True)
+
+from sklearn.metrics import classification_report, accuracy_score
+pred = np.round(model.predict(X_test)).astype(int)
+print("Result for NN Model: ")
+print(accuracy_score(Y_test, pred))
+print(classification_report(Y_test, pred))
+
+test_loss, test_accuracy = model.evaluate(X_test, Y_test)
+print("Test Patient Accuracy: {}".format(test_accuracy))
+
+
 ##GRU Architecture##
 # The GRU architecture
 model_GRU = Sequential()
